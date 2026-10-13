@@ -48,12 +48,13 @@ python -m pytest tests -q                                                  # off
 ## Deploy (public demo)
 
 Everything runs as **one web service**: `run.py` starts the farm app internally and serves the dashboard on
-the platform's `$PORT`. Set `FARMHAND_ACCESS_CODE` so only people you share the code with can spend your LLM quota.
-Viewing, run history and replays stay open without the code.
+the platform's `$PORT`. The demo is **passwordless**. `FARMHAND_MAX_RUNS_PER_DAY` (25 in the blueprint) caps new
+tasks so visitors can't drain the free LLM quota; replays of past runs are always available. To lock it down
+instead, set `FARMHAND_ACCESS_CODE` and the UI will ask for it.
 
-- **Render (free):** New → Blueprint → select this repo (uses [render.yaml](render.yaml)). Enter `GEMINI_API_KEY`
-  and `FARMHAND_ACCESS_CODE` when prompted. The free plan sleeps when idle, so the first visit takes about a minute.
-- **Hugging Face Spaces / Railway / Fly.io:** use the [Dockerfile](Dockerfile) and set the same two secrets.
+- **Render (free):** New → Blueprint → select this repo (uses [render.yaml](render.yaml)) and paste
+  `GEMINI_API_KEY` when prompted. The free plan sleeps when idle, so the first visit takes about a minute.
+- **Hugging Face Spaces / Railway / Fly.io:** use the [Dockerfile](Dockerfile) and set `GEMINI_API_KEY`.
 
 ## Demo tasks (same code, no task-specific logic)
 

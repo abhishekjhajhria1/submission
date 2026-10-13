@@ -1,4 +1,5 @@
-# Render Blueprint: New > Blueprint > pick this repo. Set the two secret values when prompted.
+# Render Blueprint: New > Blueprint > pick this repo. Paste your GEMINI_API_KEY when prompted.
+# Passwordless by default; FARMHAND_MAX_RUNS_PER_DAY stops strangers from draining the daily LLM quota.
 services:
   - type: web
     name: farmhand
@@ -12,8 +13,8 @@ services:
         value: 3.12.7
       - key: GEMINI_API_KEY
         sync: false
-      - key: FARMHAND_ACCESS_CODE
-        sync: false
+      - key: FARMHAND_MAX_RUNS_PER_DAY
+        value: "25"
       - key: FARMHAND_MODEL
         value: gemini-3.1-flash-lite,gemini-3.5-flash-lite
       - key: FARMHAND_VERIFIER_MODEL

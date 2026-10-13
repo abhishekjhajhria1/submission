@@ -10,6 +10,7 @@ import asyncio
 import json
 import os
 import threading
+import time
 from pathlib import Path
 
 import httpx
@@ -27,8 +28,10 @@ profile = load_profile(settings.profile)
 FARM_URL = profile.data["api"]["base_url"]
 runs: dict[str, dict] = {}
 lock = threading.Lock()
-# When hosted publicly, set FARMHAND_ACCESS_CODE so only people you give the code to can spend LLM quota.
+# Public-demo guards (both optional): a password, and/or a cap on new tasks per day (replays stay unlimited).
 ACCESS_CODE = os.getenv("FARMHAND_ACCESS_CODE", "")
+MAX_RUNS_PER_DAY = int(os.getenv("FARMHAND_MAX_RUNS_PER_DAY", "0"))  # 0 = unlimited
+runs_today = {"day": "", "count": 0}
 
 
 def require_code(x_access_code: str | None = Header(default=None)) -> None:
@@ -71,6 +74,13 @@ def start_run(body: StartRun):
     with lock:
         if any(r["thread"].is_alive() for r in runs.values()):
             raise HTTPException(409, "A task is already running")
+        today = time.strftime("%Y-%m-%d")
+        if runs_today["day"] != today:
+            runs_today.update(day=today, count=0)
+        if MAX_RUNS_PER_DAY and runs_today["count"] >= MAX_RUNS_PER_DAY:
+            raise HTTPException(429, f"Today's demo limit of {MAX_RUNS_PER_DAY} tasks is reached. "
+                                     "Past runs under 'Recent runs' can still be replayed.")
+        runs_today["count"] += 1
         if body.chaos is not None:
             reset_sandbox(profile, body.chaos)
         run_id = new_run_id()
