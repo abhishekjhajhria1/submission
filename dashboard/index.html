@@ -257,7 +257,7 @@ footer.ver { font-size: 11.5px; color: var(--faint); text-align: center; margin-
       <textarea id="task" placeholder="Tell FarmHand what to do, in English, Hindi or Hinglish…"></textarea>
       <div class="row">
         <label class="switch" title="Restore the farm's seed data before running"><input type="checkbox" id="fresh" checked><span class="track"></span>Fresh farm data</label>
-        <button class="btn primary" id="run"><span data-icon="play"></span>Run task</button>
+        <span style="display:flex;gap:6px"><button class="btn reject" id="stop" style="display:none"><span data-icon="x"></span>Stop</button><button class="btn primary" id="run"><span data-icon="play"></span>Run task</button></span>
       </div>
       <div class="kbd">Ctrl + Enter to run</div>
     </div>
@@ -476,8 +476,19 @@ $("reset").onclick = async () => {
 $("run").onclick = async () => {
   const task = $("task").value.trim(); if (!task) { $("task").focus(); return; }
   const r = await api("/api/runs", { task, chaos: $("fresh").checked ? chaos : null });
-  if (!r.ok) { alert((await r.json()).detail); return; }
+  if (r.status === 409) {
+    const d = (await r.json()).detail;
+    if (d?.run_id) { open(d.run_id, true); return; }
+  }
+  if (!r.ok) { const d = (await r.json()).detail; alert(d?.message || d); return; }
   open((await r.json()).run_id, true);
+};
+$("stop").onclick = async () => {
+  if (!runId || !confirm("Stop the running task?")) return;
+  $("stop").disabled = true;
+  const r = await api(`/api/runs/${runId}/stop`, {});
+  if (!r.ok) { $("stop").disabled = false; alert((await r.json()).detail); }
+  else setStatus("Stopping…", "waiting");
 };
 
 function open(id, isLive) {
@@ -485,6 +496,7 @@ function open(id, isLive) {
   $("feed").innerHTML = ""; $("plan").innerHTML = ""; $("memory").innerHTML = ""; $("plan-progress").textContent = ""; $("plan-bar").style.width = "0";
   $("feed-sub").textContent = isLive ? "live" : "replay of run " + id;
   $("run").disabled = isLive;
+  $("stop").style.display = isLive ? "" : "none"; $("stop").disabled = false;
   if (isLive) { setStatus("Working", "running"); startTimer(); } else { setStatus("Replay", ""); $("timer").textContent = ""; stopTimer(); }
   if (source) source.close();
   source = new EventSource(`/api/runs/${id}/events?after=0`);
@@ -631,7 +643,7 @@ function handle(e) {
 
 function finish(r) {
   const s = r.status;
-  const look = { verified: ["good", "shield", "Done & verified"], blocked: ["warn", "alert", "Stopped: needs your decision"], unverified: ["warn", "alert", "Done, but not independently verified"], failed: ["bad", "x", "Couldn't complete the task"], aborted: ["bad", "x", "Stopped"], crashed: ["bad", "x", "Something went wrong"] }[s] || ["warn", "alert", human(s)];
+  const look = { verified: ["good", "shield", "Done & verified"], blocked: ["warn", "alert", "Stopped: needs your decision"], unverified: ["warn", "alert", "Done, but not independently verified"], failed: ["bad", "x", "Couldn't complete the task"], aborted: ["bad", "x", "Stopped"], crashed: ["bad", "x", "Something went wrong"], cancelled: ["warn", "x", "Stopped by you"] }[s] || ["warn", "alert", human(s)];
   const outcome = Object.entries(r.outcome || {}).filter(([, v]) => v !== null && v !== "");
   const u = r.usage || {}, tokens = ((u.input_tokens || 0) + (u.output_tokens || 0)) / 1000;
   add(`<div class="card final ${look[0]}"><div class="final-h"><div class="final-ic">${icon(look[1])}</div><div><h3>${look[2]}</h3><div class="muted" style="font-size:12px">Run ${esc(r.run_id)}</div></div></div>
@@ -642,6 +654,7 @@ function finish(r) {
   setStatus(look[2].split(":")[0], look[0] === "good" ? "good" : look[0] === "bad" ? "bad" : "waiting");
   if (look[0] === "warn") $("status").className = "status waiting";
   $("run").disabled = false;
+  $("stop").style.display = "none";
   const steps = $("plan").querySelectorAll("li");
   if (s === "verified" && steps.length) { steps.forEach((li) => { li.className = "done"; li.querySelector(".bullet").innerHTML = icon("check"); }); $("plan-bar").style.width = "100%"; $("plan-progress").textContent = `${steps.length} of ${steps.length}`; }
 }
@@ -651,7 +664,7 @@ async function loadHistory() {
   try {
     const items = await (await fetch("/api/runs")).json();
     if (!items.length) return;
-    const cls = { verified: "good", blocked: "warn", unverified: "warn", running: "run" };
+    const cls = { verified: "good", blocked: "warn", unverified: "warn", cancelled: "warn", running: "run" };
     $("history").innerHTML = "";
     items.forEach((it) => {
       const b = document.createElement("button");
@@ -659,9 +672,13 @@ async function loadHistory() {
       b.onclick = () => open(it.run_id, it.status === "running");
       $("history").appendChild(b);
     });
+    return items;
   } catch (e) { /* server restarting */ }
 }
-loadHistory();
+loadHistory().then((items) => {
+  const running = (items || []).find((it) => it.status === "running");
+  if (running && !runId) open(running.run_id, true);
+});
 
 // ---------------------------------------------------------------- live farm panel
 const seen = { orders: null, msgs: null, exp: null };

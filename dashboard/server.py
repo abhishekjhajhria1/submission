@@ -72,8 +72,9 @@ def farm_office():
 @app.post("/api/runs", dependencies=[Depends(require_code)])
 def start_run(body: StartRun):
     with lock:
-        if any(r["thread"].is_alive() for r in runs.values()):
-            raise HTTPException(409, "A task is already running")
+        busy = next((rid for rid, r in runs.items() if r["thread"].is_alive()), None)
+        if busy:
+            raise HTTPException(409, {"message": "A task is already running", "run_id": busy})
         today = time.strftime("%Y-%m-%d")
         if runs_today["day"] != today:
             runs_today.update(day=today, count=0)
@@ -154,6 +155,15 @@ def respond(run_id: str, body: Respond):
     run = runs.get(run_id)
     if not run or not run["human"].respond(body.request_id, body.model_dump()):
         raise HTTPException(404, "no pending request with that id")
+    return {"ok": True}
+
+
+@app.post("/api/runs/{run_id}/stop", dependencies=[Depends(require_code)])
+def stop(run_id: str):
+    run = runs.get(run_id)
+    if not run or not run["thread"].is_alive():
+        raise HTTPException(404, "that run is not running")
+    run["human"].cancel()
     return {"ok": True}
 
 

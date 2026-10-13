@@ -80,8 +80,19 @@ class WebHuman:
     def __init__(self, log: RunLog):
         self.log = log
         self.pending: dict[str, dict] = {}
+        self.cancelled = False
+
+    def cancel(self) -> None:
+        """Owner pressed Stop: release anything the agent is waiting on; the loop then stops itself."""
+        self.cancelled = True
+        for slot in list(self.pending.values()):
+            slot["response"] = {"answer": "The owner stopped this task.", "approved": False,
+                                "note": "The owner stopped this task."}
+            slot["event"].set()
 
     def _wait(self, kind: str, **data) -> dict:
+        if self.cancelled:
+            return {"answer": "The owner stopped this task.", "approved": False}
         request_id = uuid.uuid4().hex[:8]
         slot = {"event": threading.Event(), "response": None}
         self.pending[request_id] = slot

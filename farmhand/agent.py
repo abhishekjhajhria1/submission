@@ -104,6 +104,9 @@ class Agent:
         final, consecutive_errors, step = None, 0, 0
         while final is None:
             step += 1
+            if getattr(self.human, "cancelled", False):
+                final = self._final("cancelled", "Stopped by the owner before the task was finished.")
+                break
             if step > self.max_steps:
                 final = self._final("aborted", f"Stopped: step budget of {self.max_steps} used up.")
                 break
