@@ -58,7 +58,7 @@ header { height: 60px; display: flex; align-items: center; gap: 16px; padding: 0
 .btn:disabled { opacity: .55; cursor: default; }
 
 /* ---------- layout */
-main { display: grid; grid-template-columns: 330px minmax(0, 1fr) 370px; gap: 16px; padding: 16px; height: calc(100vh - 60px); }
+main { display: grid; grid-template-columns: minmax(250px, 340px) 410px minmax(290px, 380px); justify-content: center; gap: 28px; padding: 16px 20px; height: calc(100vh - 60px); }
 .col { overflow-y: auto; min-height: 0; padding-bottom: 24px; scrollbar-width: thin; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; margin-bottom: 14px; }
 .card-h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
@@ -229,17 +229,72 @@ details pre { margin: 6px 0 0; padding: 8px 10px; background: #f7f6f1; border-ra
 @keyframes flash { 0% { background-color: #fff3b8; } 100% { background-color: transparent; } }
 .msg.flash { animation: pop .5s ease-out; } @keyframes pop { 0% { transform: scale(.92); opacity: 0; } 100% { transform: none; opacity: 1; } }
 footer.ver { font-size: 11.5px; color: var(--faint); text-align: center; margin-top: 4px; }
-@media (max-width: 1200px) { main { grid-template-columns: 300px minmax(0, 1fr); } #farm { display: none; } }
+
+/* ---------- phone */
+.phone { height: 100%; max-height: 900px; align-self: center; background: #101512; border-radius: 46px; padding: 11px; box-shadow: 0 30px 60px -20px rgba(16, 33, 22, .45), 0 0 0 1px #2a332d inset, 0 0 0 2px #0b0f0c; display: flex; min-height: 0; }
+.screen { flex: 1; background: #f3f2ec; border-radius: 36px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; position: relative; }
+.sbar { height: 34px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 26px 0 30px; font-size: 13px; font-weight: 600; background: var(--surface); position: relative; }
+.sbar .island { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); width: 96px; height: 24px; border-radius: 14px; background: #101512; }
+.sbar .icons { display: flex; gap: 5px; align-items: center; }
+.sbar .icons svg { width: 15px; height: 15px; }
+.appbar { flex: none; display: flex; align-items: center; gap: 10px; padding: 8px 14px 10px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.appbar .logo { width: 36px; height: 36px; border-radius: 50%; }
+.appbar .ttl { flex: 1; min-width: 0; }
+.appbar .ttl b { display: block; font-size: 15px; line-height: 1.2; }
+.appbar .ttl small { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.appbar .status { padding: 3px 9px; font-size: 11.5px; gap: 6px; }
+#feed-col { flex: 1; overflow-y: auto; padding: 12px 12px 6px; min-height: 0; scrollbar-width: thin; }
+.screen .card { padding: 11px 12px; margin-bottom: 10px; }
+.screen .step { grid-template-columns: 24px 1fr; gap: 8px; }
+.screen .step::before { left: 11px; top: 30px; }
+.screen .action-h code { display: none; }
+.screen .step-no { width: 24px; height: 24px; font-size: 11px; }
+.screen .interrupt, .screen .verify, .screen .final { margin-left: 0; }
+.screen .notice { margin-left: 32px; }
+.screen .outcome { grid-template-columns: 1fr 1fr; }
+.screen .task-banner { background: var(--wa); border-color: #c5ebbd; margin-left: 30px; border-radius: 14px 14px 4px 14px; }
+.screen .task-banner .who { display: none; }
+.screen .task-banner .q { font-size: 14px; }
+.screen .hero { padding: 40px 10px 20px; }
+.screen .hero .logo { width: 52px; height: 52px; border-radius: 16px; }
+.screen .hero h3 { font-size: 18px; }
+.screen .hero p { font-size: 13.5px; }
+.screen .caps span { font-size: 11.5px; padding: 4px 9px; }
+.quick { flex: none; display: flex; gap: 6px; overflow-x: auto; padding: 8px 12px 2px; scrollbar-width: none; }
+.quick::-webkit-scrollbar { display: none; }
+.quick button { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--green-line); background: var(--surface); color: var(--green); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.quick button:hover { background: var(--green-soft); }
+.quick svg { width: 14px; height: 14px; }
+.composer { flex: none; padding: 8px 12px 10px; }
+.composer .box { display: flex; align-items: flex-end; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 6px 6px 6px 14px; }
+.composer .box:focus-within { border-color: var(--green-2); box-shadow: 0 0 0 3px rgba(47, 138, 92, .12); }
+.composer textarea { flex: 1; min-height: 24px; max-height: 110px; resize: none; border: 0; padding: 5px 0; background: transparent; box-shadow: none !important; font: 14px/1.4 var(--font); outline: none; }
+.round { width: 38px; height: 38px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; flex: none; }
+.round.go { background: var(--green); color: #fff; } .round.go:disabled { opacity: .45; cursor: default; }
+.round.halt { background: var(--red-soft); color: var(--red); }
+.composer .row { display: flex; align-items: center; justify-content: space-between; margin: 7px 4px 0; font-size: 11.5px; color: var(--faint); }
+.homebar { flex: none; height: 18px; display: grid; place-items: center; }
+.homebar::after { content: ""; width: 120px; height: 5px; border-radius: 3px; background: #1b231e; opacity: .85; }
+
+/* ---------- side notes */
+.feat { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line-2); }
+.feat:last-child { border: 0; padding-bottom: 2px; }
+.feat .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--green-soft); color: var(--green); flex: none; }
+.feat b { display: block; font-size: 13px; line-height: 1.3; }
+.feat small { display: block; color: var(--muted); font-size: 12px; line-height: 1.4; margin-top: 1px; }
+.feat .tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--green); background: var(--green-soft); border-radius: 4px; padding: 0 5px; margin-left: 4px; vertical-align: 1px; }
+.intro { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+.intro b { color: var(--ink); }
+@media (max-width: 1280px) { main { grid-template-columns: 410px minmax(290px, 380px); } #left { display: none; } }
+@media (max-width: 860px) { main { grid-template-columns: 410px; } #farm { display: none; } }
 </style>
 </head>
 <body>
 <header>
   <div class="brand">
     <div class="logo" data-icon="sprout"></div>
-    <div><div class="brand-name">FarmHand</div><div class="brand-sub">AI worker · Patil Farms, Nashik</div></div>
+    <div><div class="brand-name">FarmHand</div><div class="brand-sub">An AI employee for Patil Farms, Nashik</div></div>
   </div>
-  <div class="divider"></div>
-  <span id="status" class="status"><span class="dot"></span><span id="status-text">Ready</span><span id="timer" class="timer"></span></span>
   <span class="spacer"></span>
   <span class="ctl-label"><span data-icon="zap"></span>Failure injection</span>
   <div class="seg" id="chaos">
@@ -250,23 +305,26 @@ footer.ver { font-size: 11.5px; color: var(--faint); text-align: center; margin-
 </header>
 
 <main>
-  <!-- left: task + plan + memory -->
-  <div class="col">
-    <div class="card composer">
-      <div class="card-h"><span data-icon="sparkles"></span>New task</div>
-      <textarea id="task" placeholder="Tell FarmHand what to do, in English, Hindi or Hinglish…"></textarea>
-      <div class="row">
-        <label class="switch" title="Restore the farm's seed data before running"><input type="checkbox" id="fresh" checked><span class="track"></span>Fresh farm data</label>
-        <span style="display:flex;gap:6px"><button class="btn reject" id="stop" style="display:none"><span data-icon="x"></span>Stop</button><button class="btn primary" id="run"><span data-icon="play"></span>Run task</button></span>
-      </div>
-      <div class="kbd">Ctrl + Enter to run</div>
+  <!-- left: what it is + live plan/memory -->
+  <div class="col" id="left">
+    <div class="card">
+      <div class="card-h"><span data-icon="sprout"></span>Meet FarmHand</div>
+      <div class="intro">Suresh grows tomatoes, onions and grapes near Nashik, and his business runs on WhatsApp.
+        He tells FarmHand what he wants, <b>in English or Hinglish</b>, from his phone. FarmHand works out the steps
+        and <b>does the work</b> in the farm's systems.</div>
     </div>
     <div class="card">
-      <div class="card-h"><span data-icon="list"></span>Try these</div>
-      <div id="examples"></div>
+      <div class="card-h"><span data-icon="sparkles"></span>Why it works</div>
+      <div class="feat"><span class="ic" data-icon="checks"></span><div><b>Plans its own steps<span class="tag">Autonomy</span></b><small>Gets a goal, not instructions. Re-plans when reality differs.</small></div></div>
+      <div class="feat"><span class="ic" data-icon="receipt"></span><div><b>Does real work<span class="tag">Execution</span></b><small>Books orders, raises invoices, sends WhatsApp, records bills through the farm's API.</small></div></div>
+      <div class="feat"><span class="ic" data-icon="retry"></span><div><b>Recovers from failures<span class="tag">Reliability</span></b><small>Auto-retries outages. Idempotency keys mean a retry never books twice.</small></div></div>
+      <div class="feat"><span class="ic" data-icon="alert"></span><div><b>Asks before risky moves<span class="tag">Human in loop</span></b><small>Price-floor and big-order rules are enforced in code, not just the prompt.</small></div></div>
+      <div class="feat"><span class="ic" data-icon="shield"></span><div><b>Proves it's done<span class="tag">Verification</span></b><small>A separate read-only checker re-reads the systems before "done".</small></div></div>
+      <div class="feat"><span class="ic" data-icon="lang"></span><div><b>Speaks the farmer's language<span class="tag">Product</span></b><small>Hinglish tasks, mandi prices per quintal, scanned DD/MM bills.</small></div></div>
+      <div class="feat"><span class="ic" data-icon="list"></span><div><b>One profile per business<span class="tag">Generalization</span></b><small>No farm logic in the agent. Tools are generated from the app's OpenAPI.</small></div></div>
     </div>
     <div class="card">
-      <div class="card-h"><span data-icon="checks"></span>Plan <span class="right muted" id="plan-progress"></span></div>
+      <div class="card-h"><span data-icon="checks"></span>Live plan <span class="right muted" id="plan-progress"></span></div>
       <div class="progress"><div id="plan-bar" style="width:0"></div></div>
       <ul class="plan" id="plan"><li class="empty-note">The plan appears here once a task starts.</li></ul>
     </div>
@@ -281,22 +339,42 @@ footer.ver { font-size: 11.5px; color: var(--faint); text-align: center; margin-
     <footer class="ver">FarmHand v1.0 · agent runtime + Patil Farms profile</footer>
   </div>
 
-  <!-- center: activity -->
-  <div class="col" id="feed-col">
-    <div class="feed-head"><h2>Activity</h2><span class="muted" id="feed-sub"></span></div>
-    <div id="feed">
-      <div class="hero">
-        <div class="logo" data-icon="sprout"></div>
-        <h3>Hand FarmHand a task</h3>
-        <p>It reads WhatsApp, checks stock and mandi prices, books orders, records bills, asks Suresh when it should, and proves the work is done.</p>
-        <div class="caps">
-          <span><span data-icon="message"></span>WhatsApp orders</span><span><span data-icon="trend"></span>Mandi pricing</span>
-          <span><span data-icon="receipt"></span>Invoices</span><span><span data-icon="file"></span>Scanned bills</span>
-          <span><span data-icon="shield"></span>Independent verification</span>
+  <!-- center: the phone -->
+  <div class="phone"><div class="screen">
+    <div class="sbar"><span id="clock">9:41</span><span class="island"></span><span class="icons"><span data-icon="signal"></span><span data-icon="wifi"></span><span data-icon="battery"></span></span></div>
+    <div class="appbar">
+      <div class="logo" data-icon="sprout"></div>
+      <div class="ttl"><b>FarmHand</b><small>Patil Farms · AI worker <span id="feed-sub"></span></small></div>
+      <span id="status" class="status"><span class="dot"></span><span id="status-text">Ready</span><span id="timer" class="timer"></span></span>
+    </div>
+    <div id="feed-col">
+      <div id="feed">
+        <div class="hero">
+          <div class="logo" data-icon="sprout"></div>
+          <h3>Namaste Suresh 👋</h3>
+          <p>What should I take care of? I can handle WhatsApp orders, mandi pricing, invoices and bills. I'll ask you before anything risky.</p>
+          <div class="caps">
+            <span><span data-icon="message"></span>Orders</span><span><span data-icon="trend"></span>Mandi prices</span>
+            <span><span data-icon="receipt"></span>Invoices</span><span><span data-icon="file"></span>Bills</span>
+            <span><span data-icon="shield"></span>Verified</span>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+    <div class="quick" id="examples"></div>
+    <div class="composer">
+      <div class="box">
+        <textarea id="task" rows="1" placeholder="Message FarmHand… (English / Hinglish)"></textarea>
+        <button class="round halt" id="stop" style="display:none" title="Stop the running task"><span data-icon="x"></span></button>
+        <button class="round go" id="run" title="Run (Ctrl+Enter)"><span data-icon="send"></span></button>
+      </div>
+      <div class="row">
+        <label class="switch" title="Restore the farm's seed data before running"><input type="checkbox" id="fresh" checked><span class="track"></span>Fresh farm data</label>
+        <span>Ctrl + Enter to send</span>
+      </div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
 
   <!-- right: live farm -->
   <div class="col" id="farm">
@@ -365,6 +443,9 @@ const P = {
   clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   sparkles: '<path d="M9.94 14.06 4 20"/><path d="m12 3 1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2Z"/>',
   eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  signal: '<path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/>',
+  wifi: '<path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.86a10 10 0 0 1 14 0"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/>',
+  battery: '<rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><path d="M22 11v2"/><path d="M6 11v2"/><path d="M10 11v2"/>',
   lang: '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
 };
 const icon = (n, cls = "i") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${P[n] || P.sparkles}</svg>`;
@@ -462,16 +543,21 @@ const EXAMPLES = [
   ["Sai Traders wants onions at the price they asked for. Book it.", "Below price floor: approval gate", "alert"],
   ["Sharma Agro wala naya fertilizer bill mere expenses mein daal do.", "Hinglish · reads a scanned bill", "lang"],
 ];
-EXAMPLES.forEach(([task, hint, ic]) => {
-  const b = document.createElement("button"); b.className = "example";
-  b.innerHTML = `<span class="ic">${icon(ic)}</span><span><b>${esc(task)}</b><small>${esc(hint)}</small></span>`;
-  b.onclick = () => { $("task").value = task; $("task").focus(); };
+const SHORT = ["Annapurna order", "FreshMart order", "Sai Traders deal", "Hinglish bill"];
+EXAMPLES.forEach(([task, hint, ic], i) => {
+  const b = document.createElement("button");
+  b.title = `${task}\n(${hint})`;
+  b.innerHTML = `${icon(ic)}${esc(SHORT[i] || hint)}`;
+  b.onclick = () => { $("task").value = task; grow(); $("task").focus(); };
   $("examples").appendChild(b);
 });
 document.querySelectorAll("#chaos button").forEach((b) => b.onclick = () => {
   document.querySelectorAll("#chaos button").forEach((x) => x.classList.remove("on", "hot"));
   b.classList.add("on"); chaos = parseFloat(b.dataset.v); if (chaos > 0) b.classList.add("hot");
 });
+function grow() { const t = $("task"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 110) + "px"; }
+$("task").addEventListener("input", grow);
+setInterval(() => ($("clock").textContent = new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: false })), 1000);
 $("task").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("run").click(); });
 $("reset").onclick = async () => {
   const r = await api("/api/farm/reset", { chaos });
@@ -660,6 +746,7 @@ function finish(r) {
   if (look[0] === "warn") $("status").className = "status waiting";
   $("run").disabled = false;
   $("stop").style.display = "none";
+  setTimeout(() => $("feed-col").scrollTo({ top: $("feed-col").scrollHeight }), 50);
   const steps = $("plan").querySelectorAll("li");
   if (s === "verified" && steps.length) { steps.forEach((li) => { li.className = "done"; li.querySelector(".bullet").innerHTML = icon("check"); }); $("plan-bar").style.width = "100%"; $("plan-progress").textContent = `${steps.length} of ${steps.length}`; }
 }
@@ -682,7 +769,9 @@ async function loadHistory() {
 }
 loadHistory().then((items) => {
   const running = (items || []).find((it) => it.status === "running");
+  const linked = new URLSearchParams(location.search).get("run");  // ?run=<id> opens a past run directly
   if (running && !runId) open(running.run_id, true);
+  else if (linked && !runId) open(linked, false);
 });
 
 // ---------------------------------------------------------------- live farm panel

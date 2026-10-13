@@ -61,7 +61,7 @@ SUPPLIES = [
     # item, quantity, unit, location, daily_use, last_restocked
     ("diesel", 26.0, "litres", "Tractor tank + spare drum", 3.5, "2026-10-09"),
     ("urea", 9.0, "bags (45 kg)", "Input store", 0.0, "2026-10-11"),
-    ("DAP", 1.0, "bags (50 kg)", "Input store", 0.0, "2026-10-11"),
+    ("DAP", 1.0, "bag (50 kg)", "Input store", 0.0, "2026-10-11"),
     ("crop spray (Emamectin)", 0.6, "litres", "Input store", 0.0, "2026-09-28"),
     ("plastic crates", 140.0, "crates", "Packing shed", 0.0, "2026-08-15"),
 ]
