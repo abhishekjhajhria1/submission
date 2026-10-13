@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FarmHand</title>
+<style>
+:root {
+  --bg: #f4f3ec; --card: #fff; --ink: #1d261d; --muted: #6b746b; --line: #e6e4da;
+  --green: #2f6b36; --green-soft: #e3f0e1; --amber: #b7791f; --amber-soft: #fdf3dc;
+  --red: #b23a2e; --red-soft: #fbe6e3; --blue: #2b5c8a; --blue-soft: #e4eef8; --violet: #6b46a8; --violet-soft: #efe8fa;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+header { display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: var(--green); color: #fff; }
+header h1 { font-size: 18px; margin: 0; }
+header .sub { opacity: .8; font-size: 13px; }
+header .spacer { flex: 1; }
+header select, header button, header a { font: inherit; font-size: 13px; border-radius: 6px; border: 1px solid #ffffff55; background: #ffffff1a; color: #fff; padding: 5px 10px; text-decoration: none; cursor: pointer; }
+header select option { color: var(--ink); }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.status-idle { background: #ffffff26; } .status-running { background: #f6c64f; color: #3b2a00; }
+.status-verified { background: #8fd18a; color: #0f3a12; } .status-bad { background: #f2a49b; color: #4a0f08; }
+main { display: grid; grid-template-columns: 300px minmax(0, 1fr) 380px; gap: 14px; padding: 14px; height: calc(100vh - 52px); }
+.col { overflow-y: auto; min-height: 0; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+textarea { width: 100%; min-height: 84px; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+.run-btn { width: 100%; margin-top: 8px; padding: 9px; font: inherit; font-weight: 600; color: #fff; background: var(--green); border: 0; border-radius: 8px; cursor: pointer; }
+.run-btn:disabled { opacity: .5; cursor: default; }
+.example { display: block; width: 100%; text-align: left; font: inherit; font-size: 13px; padding: 7px 9px; margin: 0 0 6px; background: #fafaf6; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.example:hover { border-color: var(--green); }
+.example small { display: block; color: var(--muted); font-size: 11px; }
+.plan li { margin: 3px 0; color: var(--muted); } .plan li.done { color: var(--green); } .plan li.now { color: var(--ink); font-weight: 600; }
+.plan ol { margin: 0; padding-left: 20px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 13px; }
+.kv b { font-weight: 500; color: var(--muted); } .kv span { word-break: break-word; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stat { background: #fafaf6; border-radius: 8px; padding: 6px 8px; } .stat b { display: block; font-size: 18px; }
+.stat small { color: var(--muted); font-size: 11px; }
+#timeline .empty { color: var(--muted); text-align: center; margin-top: 80px; }
+.task-banner { background: var(--green-soft); border: 1px solid #cfe3cb; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+.step-head { display: flex; align-items: center; gap: 8px; }
+.step-no { font-size: 12px; color: var(--muted); font-weight: 600; }
+.tool { font-family: ui-monospace, Consolas, monospace; font-size: 12px; padding: 2px 8px; border-radius: 6px; }
+.tool.read { background: var(--blue-soft); color: var(--blue); } .tool.write { background: var(--amber-soft); color: var(--amber); }
+.tool.control { background: var(--violet-soft); color: var(--violet); }
+.eval { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+.thought { margin-top: 4px; }
+pre { margin: 6px 0 0; padding: 7px 9px; background: #f7f7f2; border-radius: 6px; font: 12px/1.4 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow: auto; }
+.result.ok pre { background: #f1f8ef; } .result.err pre { background: var(--red-soft); color: #6b1a12; }
+.badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; margin: 6px 6px 0 0; }
+.badge.retry { background: var(--amber-soft); color: var(--amber); } .badge.idem { background: var(--green-soft); color: var(--green); }
+.card { border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid; }
+.card.approval { background: var(--amber-soft); border-color: #efd59a; } .card.question { background: var(--violet-soft); border-color: #d6c6f0; }
+.card h3 { margin: 0 0 6px; font-size: 14px; }
+.card .actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.card button { font: inherit; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+.card button.yes { background: var(--green); color: #fff; border: 0; } .card button.no { background: var(--red); color: #fff; border: 0; }
+.card input { flex: 1; min-width: 160px; font: inherit; padding: 6px 8px; border-radius: 7px; border: 1px solid var(--line); }
+.card .decided { margin-top: 8px; font-weight: 600; }
+.info { color: var(--muted); font-size: 12.5px; margin: -4px 0 10px 6px; }
+.err-line { color: var(--red); font-size: 13px; margin: 0 0 10px 6px; }
+.verify { border: 1px dashed #9db89a; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fbfdf9; }
+.verify h3 { margin: 0 0 6px; font-size: 14px; }
+.vrow { font-size: 12.5px; color: var(--muted); margin: 3px 0; } .vrow code { color: var(--ink); }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th, td { text-align: left; padding: 4px 5px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; }
+.final { border-radius: 10px; padding: 14px; margin-bottom: 10px; border: 2px solid; }
+.final.good { background: var(--green-soft); border-color: #8fc48a; } .final.bad { background: var(--red-soft); border-color: #e6a39b; }
+.final h3 { margin: 0 0 6px; font-size: 16px; }
+.flash { animation: flash 2.2s ease-out; }
+@keyframes flash { 0% { background: #fff1a8; } 100% { background: transparent; } }
+.fault { font-size: 12px; color: var(--red); }
+.farm-link { font-size: 12px; color: var(--green); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🌾 FarmHand</h1>
+  <span class="sub">AI worker for <b>Patil Farms</b>, Nashik</span>
+  <span id="status" class="pill status-idle">idle</span>
+  <span class="spacer"></span>
+  <label style="font-size:13px">Chaos
+    <select id="chaos">
+      <option value="0">off</option>
+      <option value="0.3">30% failures</option>
+      <option value="0.6">60% failures</option>
+    </select>
+  </label>
+  <button id="reset" title="Restore the farm's seed data">Reset farm</button>
+  <a href="http://127.0.0.1:8001/" target="_blank">Farm office ↗</a>
+</header>
+
+<main>
+  <div class="col">
+    <div class="panel">
+      <h2>Give FarmHand a task</h2>
+      <textarea id="task" placeholder="e.g. Hotel Annapurna messaged about tomatoes. Handle the order and confirm with them."></textarea>
+      <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="fresh" checked> reset farm before running</label>
+      <button id="run" class="run-btn">▶ Run</button>
+    </div>
+    <div class="panel">
+      <h2>Example tasks</h2>
+      <div id="examples"></div>
+    </div>
+    <div class="panel"><h2>Plan</h2><div id="plan" class="plan"><span style="color:var(--muted)">—</span></div></div>
+    <div class="panel"><h2>Working memory</h2><div id="memory" class="kv"><span style="color:var(--muted)">—</span></div></div>
+    <div class="panel"><h2>Run stats</h2><div id="stats" class="stats"></div></div>
+  </div>
+
+  <div class="col" id="timeline"><div class="empty">Pick an example or type a task, then press Run.<br>Every decision, tool call and result will stream here live.</div></div>
+
+  <div class="col" id="farm">
+    <div class="panel"><h2>Live farm state <a class="farm-link" href="http://127.0.0.1:8001/" target="_blank">open ↗</a></h2><div id="farm-stock"></div></div>
+    <div class="panel"><h2>Sales orders</h2><div id="farm-orders"></div></div>
+    <div class="panel"><h2>WhatsApp</h2><div id="farm-msgs"></div></div>
+    <div class="panel"><h2>Expense book</h2><div id="farm-exp"></div></div>
+    <div class="panel"><h2>Injected failures (chaos)</h2><div id="farm-chaos"></div></div>
+  </div>
+</main>
+
+<script>
+const EXAMPLES = [
+  ["Hotel Annapurna messaged about tomatoes. Handle the order and confirm with them.", "order → price → invoice → reply"],
+  ["Handle FreshMart's latest order request.", "not enough grapes → asks the farmer"],
+  ["Sai Traders wants onions at the price they asked for. Book it.", "below price floor → approval gate"],
+  ["Sharma Agro wala naya fertilizer bill mere expenses mein daal do.", "Hinglish · reads a scanned receipt"],
+];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const fmt = (o) => typeof o === "string" ? o : JSON.stringify(o, null, 1).replace(/\n\s*/g, " ");
+let runId = null, lastSeq = -1, source = null, stepCards = {}, verifyBox = null, started = 0;
+
+EXAMPLES.forEach(([task, hint]) => {
+  const b = document.createElement("button");
+  b.className = "example";
+  b.innerHTML = `${esc(task)}<small>${esc(hint)}</small>`;
+  b.onclick = () => { $("task").value = task; };
+  $("examples").appendChild(b);
+});
+
+function setStatus(text, cls) { $("status").textContent = text; $("status").className = "pill " + cls; }
+function add(html) {
+  const tl = $("timeline");
+  const atBottom = tl.scrollHeight - tl.scrollTop - tl.clientHeight < 120;
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  const el = div.firstElementChild;
+  tl.appendChild(el);
+  if (atBottom) tl.scrollTop = tl.scrollHeight;
+  return el;
+}
+
+$("run").onclick = async () => {
+  const task = $("task").value.trim();
+  if (!task) return;
+  const body = { task, chaos: $("fresh").checked ? parseFloat($("chaos").value) : null };
+  const r = await fetch("/api/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!r.ok) { alert((await r.json()).detail); return; }
+  runId = (await r.json()).run_id;
+  lastSeq = -1; stepCards = {}; verifyBox = null; started = Date.now();
+  $("timeline").innerHTML = "";
+  $("plan").innerHTML = "—"; $("memory").innerHTML = "—";
+  $("run").disabled = true;
+  setStatus("running", "status-running");
+  listen();
+};
+
+$("reset").onclick = async () => {
+  const r = await fetch("/api/farm/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chaos: parseFloat($("chaos").value) }) });
+  if (!r.ok) alert((await r.json()).detail);
+};
+
+function listen() {
+  if (source) source.close();
+  source = new EventSource(`/api/runs/${runId}/events?after=${lastSeq + 1}`);
+  source.onmessage = (m) => {
+    const e = JSON.parse(m.data);
+    if (e.seq <= lastSeq) return;
+    lastSeq = e.seq;
+    handle(e);
+    if (e.type === "run_finished") source.close();
+  };
+}
+
+async function respond(payload) {
+  await fetch(`/api/runs/${runId}/respond`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+}
+
+function handle(e) {
+  switch (e.type) {
+    case "run_started":
+      add(`<div class="task-banner"><b>Task:</b> ${esc(e.task)}<br><small style="color:var(--muted)">${esc(e.model)} · ${e.tools.length} tools discovered from the farm app's API + files</small></div>`);
+      break;
+    case "plan":
+      $("plan").innerHTML = "<ol>" + e.plan.map((p, i) => `<li class="${i < e.current ? "done" : i === e.current ? "now" : ""}">${i < e.current ? "✓ " : ""}${esc(p)}</li>`).join("") + "</ol>";
+      break;
+    case "memory":
+      $("memory").innerHTML = Object.entries(e.memory).map(([k, v]) => `<b>${esc(k)}</b><span>${esc(fmt(v))}</span>`).join("");
+      break;
+    case "step":
+      stepCards[e.step] = add(`<div class="step">
+        <div class="step-head"><span class="step-no">STEP ${e.step}</span><span class="tool ${e.effect}">${esc(e.tool)}</span></div>
+        ${e.evaluation ? `<div class="eval">↳ ${esc(e.evaluation)}</div>` : ""}
+        <div class="thought">💭 ${esc(e.thought)}</div>
+        ${Object.keys(e.args || {}).length ? `<pre>${esc(JSON.stringify(e.args, null, 1))}</pre>` : ""}
+        <div class="result"></div></div>`);
+      break;
+    case "tool_result": {
+      const card = stepCards[e.step];
+      if (!card) break;
+      const box = card.querySelector(".result:last-child") || card;
+      const badges = (e.notes || []).map((n) => n.includes("Idempotency") ? `<span class="badge idem">🛡 idempotent replay: no duplicate</span>` : n.includes("retr") ? `<span class="badge retry">⟳ ${esc(n.split(":")[0])}</span>` : "").join("");
+      const el = document.createElement("div");
+      el.className = "result " + (e.ok ? "ok" : "err");
+      el.innerHTML = `${badges}<pre>${e.ok ? "✓ " : "✗ "}${esc(e.text)}</pre>`;
+      box.replaceWith(el);
+      break;
+    }
+    case "approval_request": {
+      const el = add(`<div class="card approval"><h3>⚠️ Approval needed</h3>
+        <div><b>Why:</b> ${esc(e.reason)}</div><pre>${esc(e.action)}</pre>
+        <div class="actions"><input placeholder="optional note to FarmHand"><button class="yes">Approve</button><button class="no">Reject</button></div></div>`);
+      const send = async (approved) => {
+        await respond({ request_id: e.request_id, approved, note: el.querySelector("input").value });
+        el.querySelector(".actions").outerHTML = `<div class="decided">${approved ? "✅ Approved" : "⛔ Rejected"} by you</div>`;
+      };
+      el.querySelector(".yes").onclick = () => send(true);
+      el.querySelector(".no").onclick = () => send(false);
+      setStatus("waiting for you", "status-running");
+      break;
+    }
+    case "approval_result":
+      setStatus("running", "status-running");
+      break;
+    case "question": {
+      const el = add(`<div class="card question"><h3>🙋 FarmHand needs your input</h3><div>${esc(e.question)}</div>
+        <div class="actions">${(e.options || []).map((o) => `<button class="opt">${esc(o)}</button>`).join("")}</div>
+        <div class="actions"><input placeholder="or type your answer"><button class="yes">Send</button></div></div>`);
+      const send = async (answer) => {
+        if (!answer) return;
+        await respond({ request_id: e.request_id, answer });
+        el.querySelectorAll(".actions").forEach((a) => a.remove());
+        el.insertAdjacentHTML("beforeend", `<div class="decided">You: ${esc(answer)}</div>`);
+        setStatus("running", "status-running");
+      };
+      el.querySelectorAll(".opt").forEach((b) => (b.onclick = () => send(b.textContent)));
+      el.querySelector(".yes").onclick = () => send(el.querySelector("input").value.trim());
+      setStatus("waiting for you", "status-running");
+      break;
+    }
+    case "waiting":
+      add(`<div class="info">⏳ ${esc(e.message)}</div>`);
+      break;
+    case "error":
+      add(`<div class="err-line">‼ ${esc(e.message)}</div>`);
+      break;
+    case "verify_started":
+      verifyBox = add(`<div class="verify"><h3>🔎 Independent verification</h3><div style="font-size:12.5px;color:var(--muted)">A separate read-only checker re-reads the farm systems. It does not see the worker's reasoning.</div></div>`);
+      break;
+    case "verify_step":
+      if (verifyBox) verifyBox.insertAdjacentHTML("beforeend", `<div class="vrow">v${e.step} · <code>${esc(e.tool)}</code> ${esc(fmt(e.args))} — ${esc(e.thought)}</div>`);
+      break;
+    case "verify_result":
+      if (verifyBox) verifyBox.insertAdjacentHTML("beforeend", `
+        <div style="margin-top:8px;font-weight:600;color:${e.passed ? "var(--green)" : "var(--red)"}">${e.passed ? "✅ Verified" : "❌ Not verified"}: ${esc(e.summary)}</div>
+        ${e.checks?.length ? `<table><tr><th></th><th>Check</th><th>Expected</th><th>Observed</th></tr>${e.checks.map((c) => `<tr><td>${c.ok ? "✓" : "✗"}</td><td>${esc(c.check)}</td><td>${esc(c.expected)}</td><td>${esc(c.observed)}</td></tr>`).join("")}</table>` : ""}`);
+      break;
+    case "run_finished": {
+      const r = e.report;
+      const good = r.status === "verified";
+      add(`<div class="final ${good ? "good" : "bad"}"><h3>${good ? "✅ Done & verified" : "Status: " + esc(r.status)}</h3>
+        <div>${esc(r.summary)}</div>
+        ${r.outcome && Object.keys(r.outcome).length ? `<div class="kv" style="margin-top:8px">${Object.entries(r.outcome).map(([k, v]) => `<b>${esc(k)}</b><span>${esc(fmt(v))}</span>`).join("")}</div>` : ""}</div>`);
+      setStatus(r.status, good ? "status-verified" : "status-bad");
+      $("run").disabled = false;
+      if (r.usage) $("stats").innerHTML = [
+        [r.steps, "steps"], [r.usage.calls, "LLM calls"], [((r.usage.input_tokens + r.usage.output_tokens) / 1000).toFixed(1) + "k", "tokens"], [r.duration_s + "s", "time"],
+      ].map(([v, l]) => `<div class="stat"><b>${v}</b><small>${l}</small></div>`).join("");
+      break;
+    }
+  }
+}
+
+// ---- live farm state
+const prevRows = {};
+function table(id, headers, rows) {
+  const old = prevRows[id] || [];
+  $(id).innerHTML = rows.length ? `<table><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr>${rows.map((r) => {
+    const key = JSON.stringify(r), changed = old.length && !old.includes(key);
+    return `<tr class="${changed ? "flash" : ""}">${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`;
+  }).join("")}</table>` : `<span style="color:var(--muted)">—</span>`;
+  prevRows[id] = rows.map((r) => JSON.stringify(r));
+}
+async function pollFarm() {
+  try {
+    const s = await (await fetch("/api/farm")).json();
+    table("farm-stock", ["Product", "Avail kg", "Reserved"], s.stock.map((x) => [x.product, x.available_kg, x.reserved_kg]));
+    table("farm-orders", ["#", "Buyer", "Items", "Total ₹", "Status"], s.orders.slice().reverse().slice(0, 5).map((o) => [o.id, o.buyer_name, o.items.map((i) => `${i.product} ${i.qty_kg}kg @${i.price_per_kg}`).join(", "), o.total.toLocaleString("en-IN"), o.status]));
+    const names = { 1: "Hotel Annapurna", 2: "FreshMart", 3: "Sai Traders", 4: "Sharma Agro", 5: "Grape Growers" };
+    table("farm-msgs", ["", "Contact", "Message"], s.messages.slice().reverse().slice(0, 5).map((m) => [m.direction === "out" ? "→" : "←", names[m.contact_id] || m.contact_id, m.text]));
+    table("farm-exp", ["Date", "Vendor", "₹", "Ref"], s.expenses.slice().reverse().slice(0, 4).map((x) => [x.date, x.vendor, x.amount.toLocaleString("en-IN"), x.reference]));
+    $("farm-chaos").innerHTML = s.chaos ? (s.chaos_log.slice(-6).reverse().map((f) => `<div class="fault">${esc(f.time)} ${esc(f.method)} ${esc(f.path)} → ${esc(f.fault)}</div>`).join("") || `<span style="color:var(--muted)">chaos ${s.chaos * 100}% · none yet</span>`) : `<span style="color:var(--muted)">off</span>`;
+  } catch (err) { /* farm app not up yet */ }
+}
+setInterval(pollFarm, 1500);
+pollFarm();
+</script>
+</body>
+</html>

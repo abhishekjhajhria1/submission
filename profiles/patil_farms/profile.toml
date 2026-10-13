@@ -1,0 +1,35 @@
+# Company profile: everything FarmHand knows about THIS business.
+# The agent code is generic; a different business = a different profile folder.
+
+name = "Patil Farms"
+owner = "Suresh Patil"
+about = """Family farm in Ozar, Nashik (Maharashtra) growing tomatoes, onions, grapes and green chilli.
+Sells to hotels, retailers and traders. Almost all business happens over WhatsApp."""
+language = """Suresh and his buyers often write in Hinglish or Marathi-English (e.g. 'kanda' = onion,
+'tamatar' = tomato, 'bhau' = brother). Understand it. Reply to buyers in simple, polite English."""
+today = "2026-10-13"  # sandbox clock (a Tuesday); delete this line to use the real date
+
+[api]
+base_url = "http://127.0.0.1:8001"
+openapi_path = "/openapi.json"
+
+[files]
+root = "workspace"  # the farmer's documents (scanned receipts etc.), relative to the repo
+
+[policy]
+# Enforced in code by policy.py - the model cannot talk its way past these.
+approval_order_value_above = 25000
+price_floor_per_kg = { tomato = 20, onion = 15, grapes = 55, "green chilli" = 30 }
+
+[limits]
+max_steps = 30
+verifier_max_steps = 10
+
+[sop]
+rules = [
+  "Selling price per kg = today's Nashik APMC modal price converted to Rs/kg (prices are quoted per quintal = 100 kg), plus a markup by buyer type: hotel +3, retailer +2, trader +0.",
+  "Never sell below the price floor (Rs/kg): tomato 20, onion 15, grapes 55, green chilli 30. Orders above Rs 25,000 also need Suresh's approval. If a buyer insists on a lower price, it needs Suresh's approval.",
+  "If a buyer asks for more than the available stock, do not decide alone: ask Suresh whether to offer the quantity available.",
+  "After booking an order, confirm it to the buyer on WhatsApp: quantity and rate per item, total, delivery date and invoice number.",
+  "Record every bill or receipt in the expense book exactly as printed (vendor, bill number, date, total, payment mode). Never record the same bill twice.",
+]

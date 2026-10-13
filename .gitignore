@@ -1,0 +1,7 @@
+.env
+runs/
+__pycache__/
+*.pyc
+.venv/
+eval/results/*.json
+prep/
