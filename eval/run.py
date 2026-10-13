@@ -35,13 +35,15 @@ def run_one(task, chaos: float, seed: int, settings: Settings, profile) -> dict:
     ground_truth = all(c["ok"] for c in checks)
     status = report.get("status")
     usage = report.get("usage") or {}
+    verification = report.get("verification") or {}
     return {
         "task": task.id, "chaos": chaos, "seed": seed, "run_id": log.run_id,
         "agent_status": status, "expected_status": "/".join(task.expect_status),
         "success": ground_truth and status in task.expect_status,
         "ground_truth": ground_truth,
-        # verifier agreement: only meaningful when the worker claimed success
-        "verifier_said_ok": status == "verified" if report.get("verification") else None,
+        # verifier agreement: only meaningful when the verifier actually ran (not on an LLM outage)
+        "verifier_said_ok": (status == "verified") if verification and not verification.get("unavailable") else None,
+        "verifier_unavailable": bool(verification.get("unavailable")),
         "checks": checks, "steps": report.get("steps"), "llm_calls": usage.get("calls"),
         "tokens": (usage.get("input_tokens") or 0) + (usage.get("output_tokens") or 0),
         "duration_s": report.get("duration_s"), "faults_injected": len(state.get("chaos_log", [])),
@@ -65,7 +67,12 @@ def summarise(rows: list[dict], model: str) -> str:
     judged = [r for r in rows if r["verifier_said_ok"] is not None]
     if judged:
         agree = sum(r["verifier_said_ok"] == r["ground_truth"] for r in judged)
-        lines.append(f"- **Verifier agreed with ground truth in {agree}/{len(judged)} runs** where it was invoked")
+        lines.append(f"- **Verifier agreed with ground truth in {agree}/{len(judged)} runs** where it ran")
+    outages = sum(r.get("verifier_unavailable", False) for r in rows)
+    if outages:
+        lines.append(f"- Verifier unavailable (LLM outage) in {outages} run(s): reported as `unverified`")
+    lines.append(f"- Ground truth correct (work actually done right) in "
+                 f"{sum(r['ground_truth'] for r in rows)}/{len(rows)} runs")
     return "\n".join(lines) + "\n"
 
 

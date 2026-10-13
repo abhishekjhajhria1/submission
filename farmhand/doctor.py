@@ -41,8 +41,8 @@ def main() -> None:
         else:
             models = [m["id"] for m in llm.http.get("/models").json().get("data", [])]
         print(f"✓ API key works. Models available: {', '.join(m for m in models if 'flash' in m or settings.provider != 'gemini')[:600]}")
-        if settings.model not in models:
-            print(f"! configured model {settings.model!r} is not in that list; set FARMHAND_MODEL in .env")
+        for missing in [m for m in llm.models if m not in models]:
+            print(f"! configured model {missing!r} is not available to this key; edit FARMHAND_MODEL in .env")
         reply = llm.decide("Reply with JSON only.", 'Return {"ok": true, "sum": 2400/100 + 3}')
         print(f"✓ JSON decision call works: {reply}")
         if "--doc" in sys.argv:

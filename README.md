@@ -76,7 +76,7 @@ sometimes *after* saving. The agent still completes the task without duplicates.
           │   └──────────▲─────────────┘   └────────────────────┘   └───────────────────┘   └─────┬─────┘ │
           │              └───────────── loop detection · step budget · error budget ◀──────────────┘       │
           │                                                                                                │
-          │   finish(success) ──▶ VERIFIER: fresh context, read-only tools, checks the systems of record   │
+          │   finish(success) ──▶ VERIFIER: fresh context, other model, read-only tools, checks the systems │
           │                       pass → "verified"   fail → findings sent back to worker (1 repair round)  │
           └───────────────┬───────────────────────────────────────┬────────────────────────────────────────┘
                           │ tools auto-generated from OpenAPI      │ file tools (PDF/images → vision model)
@@ -156,6 +156,7 @@ sometimes *after* saving. The agent still completes the task without duplicates.
 | A write still failing after retries | Result says **"OUTCOME UNKNOWN: check state before retrying"**. The agent reads (e.g. `list_orders`) before deciding |
 | Validation error (bad date, unknown product, insufficient stock) | The server's error is passed through verbatim. The agent fixes its arguments or changes plan |
 | LLM 429 / 5xx / network | `llm.py` backs off (honouring the API's retry delay) and spaces calls out for the free tier |
+| LLM model overloaded or out of quota | **Model failover chain** (`FARMHAND_MODEL=a,b,c`): two 503s → that step uses the next model; a daily quota hit → the model is dropped for the rest of the run, with no pointless waiting |
 | Malformed model output | Re-asked with the exact validation error, up to 2 times |
 | Agent stuck repeating itself | Warning at 3 identical calls, abort at 5. Error budget of 6 consecutive failures. 30-step budget |
 | Claimed success that isn't real | Independent verifier, plus one repair round |
@@ -168,7 +169,38 @@ values, the right stock levels, and the buyer informed. The suite covers 5 cases
 It reports success rate per chaos level, steps, LLM calls, failures injected, and **how often the verifier
 agreed with ground truth**.
 
-Latest results: [eval/RESULTS.md](eval/RESULTS.md)
+**Latest run** (Flash-Lite worker + Flash-Lite verifier, 5 scenarios × chaos 0% / 30%, full table in
+[eval/RESULTS.md](eval/RESULTS.md)):
+
+| Metric | Result |
+|---|---|
+| Work actually done right (database ground truth) | **10 / 10** |
+| Fully correct (right work **and** right final status) | **8 / 10** (30% chaos: 5 / 5) |
+| Verifier agreed with ground truth | **8 / 8** runs where it ran |
+| Faults injected and absorbed (503s, slow responses, lost writes) | up to 3 per run, no duplicates |
+| Avg LLM steps per task | ~5 |
+
+The two misses, analysed:
+- `order_approval` (0%): the work was finished and correct, but **this machine's internet connection dropped**
+  (`ConnectError` on every model) during verification, so the run aborted. That's infrastructure, not the agent.
+- `order_rejected` (0%): after the owner said "no", the lite model **sent the buyer an unrequested counter-offer**
+  and reported `success` instead of `blocked`. Nothing was booked (ground truth correct), but it overstepped.
+  The prompt forbids this. The cheaper model follows that rule only some of the time, and the verifier didn't
+  flag the extra message. Next steps: a stronger worker model, and a deterministic "no writes to this contact after an owner
+  rejection" policy.
+
+## What real runs taught me (and what I changed)
+
+| Observed in a real run | Change |
+|---|---|
+| Free-tier Gemini allows **20 requests/day per model**, and returns waves of 503 "overloaded" | Model **failover chain**; fail fast on a daily quota instead of sleeping; **batched reads** (up to 4 independent reads per step) cut the Annapurna task from 7 LLM steps to 4 |
+| The verifier **rejected a correct order**: it saw 150 kg of tomato left and concluded "sold 200 kg with only 150 available". It mistook the after-state for the before-state | Verifier prompt now spells out that reads include the worker's own writes. Re-verifying the same run passed ("350 kg before the order"). This is why the eval measures **verifier agreement with ground truth** |
+| A verifier **outage** was treated as a rejection, sending correct work back for "repair" | Outages now end the run as `unverified`, with no repair round |
+| Retrying a write with the same idempotency key failed validation, because the first attempt had already reserved the stock | The replay check runs **before** validation, as payment APIs do |
+| Models are unreliable at weekday arithmetic ("this Friday", "kal") | An explicit 8-day calendar is in the context |
+| In a "rejected" test, the (lite) model asked the owner, got **"No"**, and then **still tried to book the ₹14 order** | Nothing needed: the **code-level approval gate blocked it**, which is exactly why policy lives in code rather than the prompt. I also tightened the prompt ("no" stops that line of action; no unrequested side actions; never wait for third-party replies) |
+| The model asked "do you approve?" *and then* the gate asked again (double prompt) | The SOP now says approvals are requested automatically when booking, so the model doesn't need to ask separately |
+| One model checking its own family's work shares blind spots | The verifier can run on a different model (`FARMHAND_VERIFIER_MODEL`, default Flash-Lite), which also has a separate quota |
 
 ## Known limitations
 
@@ -212,7 +244,8 @@ Latest results: [eval/RESULTS.md](eval/RESULTS.md)
 
 | Component | Used for |
 |---|---|
-| **Google Gemini** (`gemini-3.8-flash` by default, configurable) via `google-genai` | Worker and verifier decisions (JSON mode); transcribing scanned PDFs (multimodal) |
+| **Google Gemini** via `google-genai`: `gemini-3.8-flash`, failing over to 3.7 / 3.6 / 3.5 Flash; thinking level `low` | Worker and verifier decisions (JSON mode); transcribing scanned PDFs (multimodal) |
+| **Gemini Flash-Lite** (`gemini-3.1-flash-lite` worker, `gemini-3.5-flash-lite` verifier) | What the **demo video and eval** ran on: the free tier allows only 20 requests/day on the main Flash models, and Flash-Lite passed every task anyway |
 | Any **OpenAI-compatible API** (optional: Groq, OpenRouter, OpenAI, Ollama) | Same decisions via `FARMHAND_PROVIDER=openai`. PDFs then use a built-in text-layer extractor |
 | **FastAPI + Uvicorn** | Farm sandbox app and dashboard |
 | **httpx** | API tool calls |

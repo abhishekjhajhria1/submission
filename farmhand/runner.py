@@ -28,7 +28,8 @@ def run_task(task: str, human: Human, log: RunLog | None = None, settings: Setti
     profile = profile or load_profile(settings.profile)
     log = log or RunLog(new_run_id(), settings.runs_dir)
     try:
-        return Agent(settings, profile, make_llm(settings), human, log).run(task)
+        verifier_llm = make_llm(settings, settings.verifier_model) if settings.verifier_model else None
+        return Agent(settings, profile, make_llm(settings), human, log, verifier_llm).run(task)
     except Exception as e:  # never leave a dashboard run hanging without a final event
         log.emit("error", message=f"{type(e).__name__}: {e}")
         report = {"run_id": log.run_id, "task": task, "status": "crashed", "summary": str(e), "outcome": {}}

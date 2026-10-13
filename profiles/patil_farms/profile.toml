@@ -28,7 +28,7 @@ verifier_max_steps = 10
 [sop]
 rules = [
   "Selling price per kg = today's Nashik APMC modal price converted to Rs/kg (prices are quoted per quintal = 100 kg), plus a markup by buyer type: hotel +3, retailer +2, trader +0.",
-  "Never sell below the price floor (Rs/kg): tomato 20, onion 15, grapes 55, green chilli 30. Orders above Rs 25,000 also need Suresh's approval. If a buyer insists on a lower price, it needs Suresh's approval.",
+  "Price floors (Rs/kg): tomato 20, onion 15, grapes 55, green chilli 30. Orders below a floor or above Rs 25,000 need Suresh's approval. The system requests that approval from him automatically when you try to book such an order, so if the owner asked you to book it, just attempt the booking; do not ask him separately.",
   "If a buyer asks for more than the available stock, do not decide alone: ask Suresh whether to offer the quantity available.",
   "After booking an order, confirm it to the buyer on WhatsApp: quantity and rate per item, total, delivery date and invoice number.",
   "Record every bill or receipt in the expense book exactly as printed (vendor, bill number, date, total, payment mode). Never record the same bill twice.",

@@ -99,6 +99,20 @@ def test_verifier_rejection_triggers_repair_round():
     assert rejected, "the verifier's rejection must be fed back to the worker"
 
 
+def test_verifier_outage_is_not_treated_as_rejection():
+    class DownLLM(FakeLLM):
+        def decide(self, system, prompt, validate=None):
+            raise agent_mod.LLMError("provider overloaded")
+    worker = FakeLLM([act("create_order", **ORDER), act("finish", status="success", summary="done")])
+    S.reset(0, 1)
+    profile = load_profile("patil_farms")
+    client = TestClient(app)
+    agent_mod.build_tools = lambda profile, llm, run_id: ToolRegistry(api_tools("", "/openapi.json", run_id, http=client))
+    log = RunLog("test-outage", Settings().runs_dir)
+    report = agent_mod.Agent(Settings(), profile, worker, ScriptedHuman(), log, DownLLM([])).run("t")
+    assert report["status"] == "unverified" and report["steps"] == 2, "no repair round for an outage"
+
+
 def test_invalid_tool_is_rejected_by_validator():
     try:
         run([act("delete_everything")])
@@ -106,6 +120,27 @@ def test_invalid_tool_is_rejected_by_validator():
         assert "unknown tool" in str(e)
     else:
         raise AssertionError("validator should reject unknown tools")
+
+
+def test_batched_reads_run_in_one_step():
+    report, log = run([
+        {"evaluation": "", "thought": "gather context", "actions": [
+            {"tool": "get_stock", "args": {}}, {"tool": "get_market_prices", "args": {"product": "tomato"}},
+            {"tool": "list_messages", "args": {"contact_id": 1}}]},
+        act("finish", status="blocked", summary="stop"),
+    ])
+    results = [e for e in log.events if e["type"] == "tool_result"]
+    assert [r["step"] for r in results] == ["1.1", "1.2", "1.3"] and all(r["ok"] for r in results)
+    assert report["steps"] == 2  # three reads cost one LLM decision
+
+
+def test_batching_a_write_is_rejected():
+    try:
+        run([{"actions": [{"tool": "get_stock", "args": {}}, {"tool": "create_order", "args": ORDER}]}])
+    except ValueError as e:
+        assert "only [read] tools can be batched" in str(e)
+    else:
+        raise AssertionError("a write inside a batch must be rejected")
 
 
 def test_loop_detection_aborts():

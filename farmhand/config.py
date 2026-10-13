@@ -21,7 +21,12 @@ class Settings:
     gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     openai_base_url: str = field(default_factory=lambda: os.getenv("OPENAI_BASE_URL", ""))
-    model: str = field(default_factory=lambda: os.getenv("FARMHAND_MODEL", "gemini-3.8-flash"))
+    # Comma-separated failover chain: quotas are per model, and any model can be overloaded at times.
+    model: str = field(default_factory=lambda: os.getenv(
+        "FARMHAND_MODEL", "gemini-3.8-flash,gemini-3.7-flash,gemini-3.6-flash,gemini-3.5-flash"))
+    # Optional separate model chain for the independent verifier (empty = same as the worker).
+    verifier_model: str = field(default_factory=lambda: os.getenv("FARMHAND_VERIFIER_MODEL", ""))
+    thinking: str = field(default_factory=lambda: os.getenv("LLM_THINKING", "low"))  # Gemini 3 thinking level
     # Free-tier Gemini allows ~10 requests/minute; space calls out instead of hitting 429s.
     min_seconds_between_calls: float = field(default_factory=lambda: float(os.getenv("LLM_MIN_INTERVAL", "6")))
     profile: str = field(default_factory=lambda: os.getenv("FARMHAND_PROFILE", "patil_farms"))
