@@ -45,6 +45,16 @@ python -m eval.run --chaos 0,0.3                                           # eva
 python -m pytest tests -q                                                  # offline tests, no API key needed
 ```
 
+## Deploy (public demo)
+
+Everything runs as **one web service**: `run.py` starts the farm app internally and serves the dashboard on
+the platform's `$PORT`. Set `FARMHAND_ACCESS_CODE` so only people you share the code with can spend your LLM quota.
+Viewing, run history and replays stay open without the code.
+
+- **Render (free):** New → Blueprint → select this repo (uses [render.yaml](render.yaml)). Enter `GEMINI_API_KEY`
+  and `FARMHAND_ACCESS_CODE` when prompted. The free plan sleeps when idle, so the first visit takes about a minute.
+- **Hugging Face Spaces / Railway / Fly.io:** use the [Dockerfile](Dockerfile) and set the same two secrets.
+
 ## Demo tasks (same code, no task-specific logic)
 
 | Task | What it shows |

@@ -1,0 +1,24 @@
+# Render Blueprint: New > Blueprint > pick this repo. Set the two secret values when prompted.
+services:
+  - type: web
+    name: farmhand
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    healthCheckPath: /api/runs
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FARMHAND_ACCESS_CODE
+        sync: false
+      - key: FARMHAND_MODEL
+        value: gemini-3.1-flash-lite,gemini-3.5-flash-lite
+      - key: FARMHAND_VERIFIER_MODEL
+        value: gemini-3.5-flash-lite,gemini-3.1-flash-lite
+      - key: LLM_THINKING
+        value: low
+      - key: LLM_MIN_INTERVAL
+        value: "4"

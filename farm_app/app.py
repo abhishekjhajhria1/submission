@@ -337,7 +337,8 @@ def admin_reset(body: ResetIn):
 @app.get("/__admin/state", include_in_schema=False)
 def admin_state():
     return {"stock": list(S.stock.values()), "orders": S.orders, "messages": S.messages,
-            "expenses": S.expenses, "chaos": S.chaos, "chaos_log": S.chaos_log[-50:]}
+            "expenses": S.expenses, "contacts": list(S.contacts.values()), "today": seed.TODAY,
+            "chaos": S.chaos, "chaos_log": S.chaos_log[-50:]}
 
 
 # --------------------------------------------------------------------------- human view

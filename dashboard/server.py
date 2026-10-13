@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import threading
 from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 from farmhand.config import Settings, load_profile
@@ -26,6 +27,13 @@ profile = load_profile(settings.profile)
 FARM_URL = profile.data["api"]["base_url"]
 runs: dict[str, dict] = {}
 lock = threading.Lock()
+# When hosted publicly, set FARMHAND_ACCESS_CODE so only people you give the code to can spend LLM quota.
+ACCESS_CODE = os.getenv("FARMHAND_ACCESS_CODE", "")
+
+
+def require_code(x_access_code: str | None = Header(default=None)) -> None:
+    if ACCESS_CODE and x_access_code != ACCESS_CODE:
+        raise HTTPException(401, "Access code required")
 
 
 class StartRun(BaseModel):
@@ -49,7 +57,16 @@ def index():
     return FileResponse(Path(__file__).parent / "index.html")
 
 
-@app.post("/api/runs")
+@app.get("/farm", response_class=HTMLResponse)
+def farm_office():
+    """The farm app's own human view, proxied so it also works when only the dashboard port is public."""
+    try:
+        return HTMLResponse(httpx.get(f"{FARM_URL}/", timeout=5).text)
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"farm app not reachable: {e}")
+
+
+@app.post("/api/runs", dependencies=[Depends(require_code)])
 def start_run(body: StartRun):
     with lock:
         if any(r["thread"].is_alive() for r in runs.values()):
@@ -72,11 +89,39 @@ def _run(task: str, human: WebHuman, log: RunLog) -> None:
         pass  # run_task already emitted the error + a final event
 
 
+@app.get("/api/runs")
+def list_runs(limit: int = 12):
+    """Recent runs (newest first) for the history panel."""
+    items = []
+    for folder in sorted(settings.runs_dir.glob("*-*-*"), reverse=True):
+        if not (folder / "trace.jsonl").exists():
+            continue
+        live = folder.name in runs and runs[folder.name]["thread"].is_alive()
+        report_file = folder / "report.json"
+        if live or not report_file.exists():
+            first = json.loads((folder / "trace.jsonl").open(encoding="utf-8").readline() or "{}")
+            items.append({"run_id": folder.name, "task": first.get("task", ""), "status": "running" if live else "incomplete"})
+        else:
+            r = json.loads(report_file.read_text(encoding="utf-8"))
+            items.append({"run_id": folder.name, "task": r.get("task", ""), "status": r.get("status"),
+                          "duration_s": r.get("duration_s")})
+        if len(items) >= limit:
+            break
+    return items
+
+
 @app.get("/api/runs/{run_id}/events")
 async def events(run_id: str, after: int = 0):
     run = runs.get(run_id)
     if not run:
-        raise HTTPException(404, "unknown run")
+        trace = settings.runs_dir / run_id / "trace.jsonl"
+        if run_id != Path(run_id).name or not trace.exists():
+            raise HTTPException(404, "unknown run")
+
+        async def replay():  # a finished run from an earlier session: stream its saved trace
+            for line in trace.read_text(encoding="utf-8").splitlines()[after:]:
+                yield f"data: {line}\n\n"
+        return StreamingResponse(replay(), media_type="text/event-stream")
     log: RunLog = run["log"]
 
     async def stream():
@@ -94,7 +139,7 @@ async def events(run_id: str, after: int = 0):
     return StreamingResponse(stream(), media_type="text/event-stream")
 
 
-@app.post("/api/runs/{run_id}/respond")
+@app.post("/api/runs/{run_id}/respond", dependencies=[Depends(require_code)])
 def respond(run_id: str, body: Respond):
     run = runs.get(run_id)
     if not run or not run["human"].respond(body.request_id, body.model_dump()):
@@ -110,7 +155,7 @@ def farm_state():
         raise HTTPException(502, f"farm app not reachable at {FARM_URL}: {e}")
 
 
-@app.post("/api/farm/reset")
+@app.post("/api/farm/reset", dependencies=[Depends(require_code)])
 def farm_reset(body: Reset):
     if any(r["thread"].is_alive() for r in runs.values()):
         raise HTTPException(409, "A task is running")

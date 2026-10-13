@@ -1,0 +1,6 @@
+.env
+.git
+runs/
+prep/
+__pycache__/
+eval/results/
