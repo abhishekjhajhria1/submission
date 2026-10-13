@@ -56,6 +56,16 @@ ORDERS = [
     (1, [("tomato", 150.0, 26.0)], "2026-10-06", "delivered", "2026-10-03 10:00"),
 ]
 
+# Farm inputs on hand (not for sale). daily_use is the owner's typical consumption in the season.
+SUPPLIES = [
+    # item, quantity, unit, location, daily_use, last_restocked
+    ("diesel", 26.0, "litres", "Tractor tank + spare drum", 3.5, "2026-10-09"),
+    ("urea", 9.0, "bags (45 kg)", "Input store", 0.0, "2026-10-11"),
+    ("DAP", 1.0, "bags (50 kg)", "Input store", 0.0, "2026-10-11"),
+    ("crop spray (Emamectin)", 0.6, "litres", "Input store", 0.0, "2026-09-28"),
+    ("plastic crates", 140.0, "crates", "Packing shed", 0.0, "2026-08-15"),
+]
+
 EXPENSES = [
     # date, vendor, category, description, amount, payment mode, reference
     ("2026-10-05", "Labour - harvest crew", "labour", "Tomato picking, 6 workers x 1 day", 2400.0, "cash", "LAB-1005"),

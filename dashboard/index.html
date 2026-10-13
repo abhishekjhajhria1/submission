@@ -311,6 +311,10 @@ footer.ver { font-size: 11.5px; color: var(--faint); text-align: center; margin-
       <div class="legend"><span><i style="background:var(--green-2)"></i>available</span><span><i style="background:#e0a43a"></i>reserved for orders</span></div>
     </div>
     <div class="card">
+      <div class="card-h"><span data-icon="db"></span>Supplies <span class="right muted">not for sale</span></div>
+      <div id="farm-supplies"></div>
+    </div>
+    <div class="card">
       <div class="card-h"><span data-icon="message"></span>WhatsApp</div>
       <div class="chat" id="farm-msgs"></div>
     </div>
@@ -615,9 +619,10 @@ function handle(e) {
       break;
     }
     case "waiting": {
-      const text = e.message.replace(/^Gemini API returned /, "AI provider returned ");
-      if (lastNotice) { lastNotice.querySelector("span").textContent = text; break; }
-      lastNotice = add(`<div class="notice">${icon("clock")}<span>${esc(text)}</span></div>`);
+      // Transient provider hiccups are handled automatically; show a calm note, keep the detail in the tooltip.
+      const text = /quota|failing over|trying gemini/i.test(e.message) ? "Switching to a backup AI model…" : "AI service busy, retrying automatically…";
+      if (lastNotice) { lastNotice.querySelector("span").textContent = text; lastNotice.title = e.message; break; }
+      lastNotice = add(`<div class="notice" title="${esc(e.message)}">${icon("clock")}<span>${esc(text)}</span></div>`);
       lastNotice = $("feed").lastElementChild;
       break;
     }
@@ -695,6 +700,9 @@ async function pollFarm() {
     return `<div class="stock-row"><div class="top"><span>${esc(x.product)}</span><span>${x.available_kg.toLocaleString("en-IN")} kg free${x.reserved_kg ? ` · ${x.reserved_kg.toLocaleString("en-IN")} kg reserved` : ""}</span></div>
       <div class="bar" style="width:${Math.max(18, (100 * tot) / maxKg)}%"><div class="a" style="width:${(100 * x.available_kg) / (tot || 1)}%"></div><div class="r" style="width:${(100 * x.reserved_kg) / (tot || 1)}%"></div></div></div>`;
   }).join("");
+
+  $("farm-supplies").innerHTML = (s.supplies || []).map((x) => `<div class="exp"><div style="text-transform:capitalize">${esc(x.item)}<small>${esc(x.location)}</small></div>
+      <span class="amt">${x.quantity.toLocaleString("en-IN")} ${esc(x.unit)}${x.daily_use ? `<small style="text-align:right">≈ ${Math.floor(x.quantity / x.daily_use)} days left</small>` : ""}</span></div>`).join("");
 
   const openOrders = s.orders.filter((o) => o.status === "confirmed");
   $("kpi-rev").textContent = inr(openOrders.reduce((a, o) => a + o.total, 0));

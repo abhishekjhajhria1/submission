@@ -47,6 +47,8 @@ class State:
                 p: {"product": p, "variety": v, "available_kg": kg, "reserved_kg": 0.0, "grade": g, "location": loc}
                 for p, v, kg, g, loc in seed.STOCK
             }
+            self.supplies = [dict(zip(("item", "quantity", "unit", "location", "daily_use", "last_restocked"), s))
+                             for s in seed.SUPPLIES]
             self.messages = [
                 {"id": i, "contact_id": c, "direction": d, "text": t, "timestamp": ts}
                 for i, (c, d, t, ts) in enumerate(seed.MESSAGES, start=1)
@@ -217,6 +219,14 @@ def send_message(body: MessageIn, request: Request, idempotency_key: str | None 
     return _idempotent_write(request, idempotency_key, write)
 
 
+@app.get("/supplies", dependencies=api)
+def get_supplies():
+    """Farm inputs on hand (diesel/fuel, fertilizer, sprays, crates) - not for sale. daily_use is the typical
+    consumption per day, so quantity / daily_use = days left."""
+    return [{**s, "days_left": round(s["quantity"] / s["daily_use"], 1) if s["daily_use"] else None}
+            for s in S.supplies]
+
+
 @app.get("/stock", dependencies=api)
 def get_stock():
     """Produce currently in storage. available_kg can be sold; reserved_kg is held for confirmed orders."""
@@ -336,7 +346,7 @@ def admin_reset(body: ResetIn):
 
 @app.get("/__admin/state", include_in_schema=False)
 def admin_state():
-    return {"stock": list(S.stock.values()), "orders": S.orders, "messages": S.messages,
+    return {"stock": list(S.stock.values()), "supplies": S.supplies, "orders": S.orders, "messages": S.messages,
             "expenses": S.expenses, "contacts": list(S.contacts.values()), "today": seed.TODAY,
             "chaos": S.chaos, "chaos_log": S.chaos_log[-50:]}
 
