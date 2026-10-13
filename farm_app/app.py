@@ -1,7 +1,7 @@
 """Patil Farms "farm office": the sandbox business system FarmHand operates.
 
 A real HTTP/JSON API with validation, business rules and state, plus a small
-auto-refreshing HTML page so a human can watch what the agent changes.
+live-updating HTML page so a human can watch what the agent changes.
 Nothing in here knows about the agent.
 
 Chaos mode (level 0..1) injects the failures real systems produce:
@@ -367,7 +367,7 @@ def office_view():
                      [(e["date"], e["vendor"], e["category"], f"{e['amount']:,.2f}", e["reference"])
                       for e in reversed(S.expenses)])
     chaos = f"<span class='chaos'>chaos {S.chaos:.0%}</span>" if S.chaos else ""
-    return f"""<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="2">
+    return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>Patil Farms Office</title><style>
 body{{font:14px system-ui,sans-serif;margin:0;background:#f6f5ef;color:#1f2a1f}}
 header{{background:#2f5d34;color:#fff;padding:12px 20px;font-size:18px;font-weight:600}}
@@ -376,7 +376,23 @@ main{{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px}}
 section{{background:#fff;border-radius:8px;padding:12px;box-shadow:0 1px 3px #0001}}
 h2{{font-size:14px;margin:0 0 8px;color:#2f5d34}} table{{width:100%;border-collapse:collapse}}
 th,td{{text-align:left;padding:4px 6px;border-bottom:1px solid #eee;vertical-align:top}} th{{color:#666;font-weight:500}}
+.flash td{{animation:flash 2.5s ease-out}} @keyframes flash{{0%{{background:#fff1a8}}100%{{background:transparent}}}}
 </style></head><body><header>Patil Farms · Farm Office {chaos}</header><main>
 <section><h2>Stock</h2>{stock}</section><section><h2>Sales orders</h2>{orders}</section>
 <section><h2>WhatsApp (latest)</h2>{msgs}</section><section><h2>Expenses</h2>{expenses}</section>
-</main></body></html>"""
+</main>
+<script>
+// Live update without reloading: fetch this same page, swap in only what changed, highlight new rows.
+setInterval(async () => {{
+  try {{
+    const doc = new DOMParser().parseFromString(await (await fetch(location.href, {{cache: "no-store"}})).text(), "text/html");
+    for (const sel of ["header", "main"]) {{
+      const cur = document.querySelector(sel), next = doc.querySelector(sel);
+      if (!next || cur.innerHTML === next.innerHTML) continue;
+      const before = new Set([...cur.querySelectorAll("tr")].map((r) => r.textContent));
+      cur.innerHTML = next.innerHTML;
+      cur.querySelectorAll("tr").forEach((r) => {{ if (before.size && !before.has(r.textContent)) r.classList.add("flash"); }});
+    }}
+  }} catch (e) {{ /* server restarting: try again next tick */ }}
+}}, 1500);
+</script></body></html>"""
